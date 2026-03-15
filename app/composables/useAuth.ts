@@ -1,13 +1,14 @@
 export const useAuth = () => {
-    // useCookie binds directly to the cookie set by backend
-    const token = useCookie<string | null>('auth_token')
-
-    const isAuthenticated = computed(() => !!token.value)
+    const { user, loggedIn, clear } = useUserSession()
 
     const logout = async () => {
-        token.value = null
+        await clear() // Wipes the session cookie
         await navigateTo('/')
     }
 
-    return { token, isAuthenticated, logout }
+    return {
+        user,
+        isAuthenticated: loggedIn,
+        logout
+    }
 }

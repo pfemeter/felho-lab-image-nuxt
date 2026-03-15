@@ -1,31 +1,40 @@
+import bcrypt from 'bcryptjs'
+import { eq } from 'drizzle-orm'
+import { db } from '../utils/store'
+import { users } from '../database/schema'
+
 export default defineEventHandler(async (event) => {
-    const body = await readBody(event)
-    const { action, username, password } = body
-
-    // Simulated network delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    if (action === 'login') {
-        if (username === 'admin' && password === 'password') {
-            // --- PLACEHOLDER JWT GENERATION ---
-            // In a real app, you would use a library like 'jsonwebtoken' or 'jose' here.
-            const fakeJwt = `header.${btoa(JSON.stringify({ user: 'admin' }))}.signature`
-
-            // Set the cookie on the server response
-            setCookie(event, 'auth_token', fakeJwt, {
-                maxAge: 60 * 60, // 1 hour
-                secure: !import.meta.dev,
-                path: '/'
-            })
-
-            return { success: true, message: 'Login successful!' }
-        }
-        throw createError({ statusCode: 401, statusMessage: 'Invalid credentials' })
-    }
+    const { action, username, password } = await readBody(event)
 
     if (action === 'register') {
-        return { success: true, message: 'Registration successful! You can now log in.' }
+        const hashedPassword = await bcrypt.hash(password, 10)
+        try {
+            const [newUser] = await db.insert(users).values({
+                username,
+                passwordHash: hashedPassword
+            }).returning()
+
+            // Auto-login after registration
+            await setUserSession(event, { user: { id: newUser.id, username: newUser.username } })
+            return { success: true }
+        } catch (e) {
+            throw createError({ statusCode: 400, statusMessage: 'Username already exists' })
+        }
     }
 
-    throw createError({ statusCode: 400, statusMessage: 'Invalid action' })
+    if (action === 'login') {
+        const [user] = await db.select().from(users).where(eq(users.username, username))
+
+        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+            throw createError({ statusCode: 401, statusMessage: 'Invalid credentials' })
+        }
+
+        // Set the encrypted session cookie automatically
+        await setUserSession(event, {
+            user: { id: user.id, username: user.username },
+            loggedInAt: new Date()
+        })
+
+        return { success: true }
+    }
 })

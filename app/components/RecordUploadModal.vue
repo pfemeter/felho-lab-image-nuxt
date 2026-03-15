@@ -81,21 +81,20 @@ const handleFileSelect = (event: Event) => {
 const handleSubmit = async () => {
     if (!file.value || !name.value) return
     isUploading.value = true
-    errorMessage.value = ''
 
     const formData = new FormData()
     formData.append('name', name.value)
     formData.append('file', file.value)
 
     try {
-        await $fetch('/api/records', {
+        await $fetch('/api/images/upload', {
             method: 'POST',
             body: formData
         })
         emit('success')
         emit('close')
     } catch (error: any) {
-        errorMessage.value = error.data?.message || 'Upload failed'
+        errorMessage.value = error.data?.statusMessage || 'Upload failed'
     } finally {
         isUploading.value = false
     }

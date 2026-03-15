@@ -1,19 +1,29 @@
 <template>
     <div class="record-item" :class="{ 'is-selected': isSelected }">
         <div class="content">
-            <h3 class="name">{{ record.name }}</h3>
+            <div class="title-row">
+                <h3 class="name">{{ record.name }}</h3>
+                <span v-if="isOwner" class="owner-badge">Yours</span>
+            </div>
             <span class="date">Uploaded: {{ formattedDate }}</span>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+const { user } = useUserSession()
 
 const props = defineProps<{
-    record: { id: string; name: string; uploadDateTime: string; fileId: string }
+    record: {
+        id: string;
+        name: string;
+        uploadDateTime: string | Date;
+        userId: string
+    }
     isSelected: boolean
 }>()
+
+const isOwner = computed(() => user.value?.id === props.record.userId)
 
 const formattedDate = computed(() => {
     const date = new Date(props.record.uploadDateTime)
@@ -49,9 +59,26 @@ const formattedDate = computed(() => {
     background-color: rgba(59, 130, 246, 0.05);
 }
 
+.title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
 .name {
-    margin: 0 0 0.25rem 0;
+    margin: 0;
     font-size: 1.1rem;
+}
+
+.owner-badge {
+    font-size: 0.7rem;
+    background: #10b981;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: bold;
 }
 
 .date {

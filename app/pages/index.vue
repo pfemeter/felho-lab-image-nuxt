@@ -1,169 +1,193 @@
 <template>
-    <div class="auth-card">
-        <h1 class="title">{{ isLogin ? 'Welcome Back' : 'Create an Account' }}</h1>
+    <div class="dashboard-wrapper">
+        <section class="list-section">
+            <div class="header-controls">
+                <div class="header-title-group">
+                    <h2>Gallery</h2>
+                    <button v-if="loggedIn" @click="isUploadModalOpen = true" class="btn-new">
+                        + Upload New File
+                    </button>
+                    <NuxtLink v-else to="/login" class="btn-login-link">
+                        Login to Upload
+                    </NuxtLink>
+                </div>
 
-        <form @submit.prevent="handleSubmit" class="auth-form">
-            <AppInput id="username" label="Username" v-model="formData.username" placeholder="Enter your username" />
+                <div class="sort-control">
+                    <label for="sort">Order by:</label>
+                    <select id="sort" v-model="sortBy" class="sort-select">
+                        <option value="uploadDateTime">Upload Date</option>
+                        <option value="name">Name</option>
+                    </select>
+                </div>
+            </div>
 
-            <AppInput id="password" label="Password" type="password" v-model="formData.password"
-                placeholder="Enter your password" />
+            <div v-if="status === 'pending'" class="loading">Loading records...</div>
 
-            <AppInput v-if="!isLogin" id="confirmPassword" label="Confirm Password" type="password"
-                v-model="formData.confirmPassword" placeholder="Confirm your password" />
+            <div v-else class="records-list">
+                <RecordListItem v-for="record in records" :key="record.id" :record="record"
+                    :isSelected="selectedRecord?.id === record.id" @click="selectedRecord = record" />
+            </div>
+        </section>
 
-            <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
-            <p v-if="successMessage" class="success-msg">{{ successMessage }}</p>
+        <aside class="detail-section">
+            <div class="detail-card" v-if="selectedRecord">
+                <div class="detail-header">
+                    <h2>{{ selectedRecord.name }}</h2>
+                    <button v-if="loggedIn && user?.id === selectedRecord.userId"
+                        @click="handleDelete(selectedRecord.id)" class="btn-delete">
+                        Delete
+                    </button>
+                </div>
+                <div class="image-container">
+                    <img :src="`/api/images/${selectedRecord.id}`" :alt="selectedRecord.name" loading="lazy" />
+                </div>
+                <p class="meta">Uploaded on {{ new Date(selectedRecord.uploadDateTime).toLocaleDateString() }}</p>
+            </div>
 
-            <button type="submit" class="submit-btn" :disabled="isLoading">
-                {{ isLoading ? 'Processing...' : (isLogin ? 'Login' : 'Register') }}
-            </button>
-        </form>
+            <div class="empty-placeholder" v-else>
+                <p>Select an image to view details.</p>
+            </div>
+        </aside>
 
-        <div class="toggle-mode">
-            <p>
-                {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
-                <button @click="toggleMode" class="text-btn">
-                    {{ isLogin ? 'Register here' : 'Login here' }}
-                </button>
-            </p>
-        </div>
+        <RecordUploadModal v-if="isUploadModalOpen" @close="isUploadModalOpen = false" @success="refresh" />
     </div>
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-    middleware: ['auth']
+// No auth middleware - this page is public!
+const { loggedIn, user } = useUserSession()
+const sortBy = ref<'uploadDateTime' | 'name'>('uploadDateTime')
+const isUploadModalOpen = ref(false)
+const selectedRecord = ref<any>(null)
+
+const { data: records, status, refresh } = await useFetch('/api/images', {
+    query: { sortBy }
 })
 
-const isLogin = ref(true)
-const isLoading = ref(false)
-const errorMessage = ref('')
-const successMessage = ref('')
-
-const formData = reactive({
-    username: '',
-    password: '',
-    confirmPassword: ''
-})
-
-const toggleMode = () => {
-    isLogin.value = !isLogin.value
-    errorMessage.value = ''
-    successMessage.value = ''
-    formData.password = ''
-    formData.confirmPassword = ''
-}
-
-const handleSubmit = async () => {
-    errorMessage.value = ''
-    successMessage.value = ''
-
-    if (!isLogin.value && formData.password !== formData.confirmPassword) {
-        errorMessage.value = "Passwords do not match!"
-        return
-    }
-
-    isLoading.value = true
+const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this image?')) return
 
     try {
-        const response = await $fetch<{ message: string }>('/api/auth', {
-            method: 'POST',
-            body: {
-                action: isLogin.value ? 'login' : 'register',
-                username: formData.username,
-                password: formData.password
-            }
-        })
-
-        successMessage.value = response.message
-
-        if (!isLogin.value) {
-            setTimeout(() => {
-                isLogin.value = true
-                formData.password = ''
-                formData.confirmPassword = ''
-                successMessage.value = ''
-            }, 2000)
-        } else {
-            await navigateTo('/dashboard')
-        }
-
-    } catch (error: any) {
-        errorMessage.value = error.data?.message || 'Something went wrong.'
-    } finally {
-        isLoading.value = false
+        await $fetch(`/api/images/${id}`, { method: 'DELETE' })
+        selectedRecord.value = null
+        await refresh()
+    } catch (e) {
+        alert('Failed to delete image.')
     }
 }
 </script>
 
 <style scoped>
-.auth-card {
-    background-color: var(--nav-bg);
-    padding: 2.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.dashboard-wrapper {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 1200px;
+    align-items: start;
 }
 
-.title {
-    text-align: center;
-    margin-top: 0;
+.header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1.5rem;
 }
 
-.auth-form {
+.header-title-group {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
 }
 
-.submit-btn {
-    background-color: #3b82f6;
+.btn-new {
+    background: #10b981;
     color: white;
-    padding: 0.75rem;
     border: none;
+    padding: 0.5rem 1rem;
     border-radius: 6px;
-    font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-new:hover {
+    background: #059669;
+}
+
+.sort-select {
+    margin-left: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background-color: var(--nav-bg);
+    color: var(--text-color);
+}
+
+.detail-card {
+    background-color: var(--nav-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 2rem;
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
     margin-top: 1rem;
-    transition: background-color 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.submit-btn:hover:not(:disabled) {
-    background-color: #2563eb;
-}
-
-.submit-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-.toggle-mode {
+.empty-placeholder {
+    background-color: var(--nav-bg);
+    padding: 3rem 2rem;
+    border-radius: 12px;
+    border: 2px dashed #9ca3af;
     text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
+    color: #9ca3af;
+    position: sticky;
+    top: 2rem;
 }
 
-.text-btn {
-    background: none;
+@media (max-width: 768px) {
+    .dashboard-wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    .header-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-delete {
+    background: #ef4444;
+    color: white;
     border: none;
-    color: #3b82f6;
-    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    padding: 0;
-    text-decoration: underline;
 }
 
-.error-msg {
-    color: #ef4444;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
+.btn-login-link {
+    font-size: 0.9rem;
+    color: #3b82f6;
+    text-decoration: none;
 }
 
-.success-msg {
-    color: #10b981;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
+.meta {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin-top: 1rem;
 }
 </style>
