@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   modules: ['nuxt-auth-utils'],
     runtimeConfig: {
         session: {
-            password: process.env.NUXT_SESSION_PASSWORD || 'password-at-least-32-chars-long'
+            password: process.env.NUXT_SESSION_PASSWORD || 'password-at-least-32-chars-long-that-is-a-very-long-password-string'
         }
     }
 })
