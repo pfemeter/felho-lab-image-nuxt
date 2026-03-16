@@ -9,6 +9,7 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "start": "node .output/server/index.mjs",
+    "start:setup": "node scripts/start.mjs",
     "db:migrate": "drizzle-kit push"
   },
   "dependencies": {
