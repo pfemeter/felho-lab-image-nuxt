@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
     if (!file) throw createError({ statusCode: 400 });
 
-    const s3Key = `uploads/${user.id}/${Date.now()}-${file.filename}`;
+    const s3Key = `uploads/${userId}/${Date.now()}-${file.filename}`;
 
     // 2. Upload to S3
     await s3.send(new PutObjectCommand({
