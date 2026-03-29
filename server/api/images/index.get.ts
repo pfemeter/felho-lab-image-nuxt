@@ -3,9 +3,9 @@ import { images } from '~~/server/database/schema';
 import { db } from '~~/server/utils/store';
 
 export default defineEventHandler(async (event) => {
-    const { sort = 'date' } = getQuery(event);
+    const { sortBy = 'uploadDateTime' } = getQuery(event);
 
     return await db.select()
         .from(images)
-        .orderBy(sort === 'name' ? asc(images.name) : desc(images.uploadDateTime));
+        .orderBy(sortBy === 'name' ? asc(images.name) : desc(images.uploadDateTime));
 });
