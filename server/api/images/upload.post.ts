@@ -15,6 +15,9 @@ export default defineEventHandler(async (event) => {
 
     const formData = await readMultipartFormData(event);
     const file = formData?.find(f => f.name === 'file');
+    const filenameByUserObj = formData?.find(f => f.name === 'name');
+    const filenameByUserRaw: unknown = filenameByUserObj?.data;
+    const filenameByUser = filenameByUserRaw as string;
 
     if (!file) throw createError({ statusCode: 400 });
 
@@ -30,7 +33,7 @@ export default defineEventHandler(async (event) => {
 
     // 3. Save Metadata to DB
     await db.insert(images).values({
-        name: file.filename || 'Untitled',
+        name: filenameByUser || file.filename || 'Untitled',
         fileMimeType: file.type || 'image/png',
         s3Key: s3Key,
         userId: userId
