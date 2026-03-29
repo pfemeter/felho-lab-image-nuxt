@@ -2,22 +2,28 @@
     <div class="auth-container">
         <div class="auth-card">
             <h1 class="title">{{ isLogin ? 'Login' : 'Register' }}</h1>
+
             <form @submit.prevent="handleSubmit" class="auth-form">
                 <div class="input-group">
-                    <label>Username</label>
-                    <input v-model="formData.username" required />
+                    <label for="username">Username</label>
+                    <input id="username" v-model="formData.username" placeholder="Enter your username" required />
                 </div>
+
                 <div class="input-group">
-                    <label>Password</label>
-                    <input v-model="formData.password" type="password" required />
+                    <label for="password">Password</label>
+                    <input id="password" v-model="formData.password" type="password" placeholder="••••••••" required />
                 </div>
+
                 <button type="submit" :disabled="isLoading" class="submit-btn">
                     {{ isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account') }}
                 </button>
             </form>
-            <button @click="isLogin = !isLogin" class="toggle-btn">
-                {{ isLogin ? "Need an account? Register" : "Have an account? Login" }}
-            </button>
+
+            <div class="toggle-container">
+                <button @click="isLogin = !isLogin" class="toggle-btn">
+                    {{ isLogin ? "Need an account? Register" : "Have an account? Login" }}
+                </button>
+            </div>
         </div>
     </div>
 </template>
@@ -41,7 +47,7 @@ const handleSubmit = async () => {
                 ...formData
             }
         })
-        await refreshSession() // Refresh the nuxt-auth-utils state
+        await refreshSession()
         await navigateTo('/')
     } catch (e: any) {
         alert(e.data?.statusMessage || 'Auth failed')
@@ -52,11 +58,19 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+/* Container to center the card on the page */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
 .auth-card {
-    background-color: var(--nav-bg);
+    background-color: var(--nav-bg, #ffffff);
     padding: 2.5rem;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
 }
@@ -64,24 +78,56 @@ const handleSubmit = async () => {
 .title {
     text-align: center;
     margin-top: 0;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 1.75rem;
+    color: var(--text-color, #1a1a1a);
 }
 
 .auth-form {
     display: flex;
     flex-direction: column;
+    gap: 1.25rem;
 }
 
+/* Input Styling */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted, #4b5563);
+}
+
+.input-group input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background-color: white;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Primary Button */
 .submit-btn {
     background-color: #3b82f6;
     color: white;
-    padding: 0.75rem;
+    padding: 0.8rem;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     transition: background-color 0.2s;
 }
 
@@ -94,31 +140,26 @@ const handleSubmit = async () => {
     cursor: not-allowed;
 }
 
-.toggle-mode {
+/* Toggle Button Styling */
+.toggle-container {
     text-align: center;
     margin-top: 1.5rem;
-    font-size: 0.9rem;
 }
 
-.text-btn {
+.toggle-btn {
     background: none;
     border: none;
     color: #3b82f6;
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: 500;
     cursor: pointer;
-    padding: 0;
+    padding: 0.5rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+    color: #2563eb;
     text-decoration: underline;
-}
-
-.error-msg {
-    color: #ef4444;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-}
-
-.success-msg {
-    color: #10b981;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
 }
 </style>
