@@ -16,8 +16,7 @@ export default defineEventHandler(async (event) => {
     const formData = await readMultipartFormData(event);
     const file = formData?.find(f => f.name === 'file');
     const filenameByUserObj = formData?.find(f => f.name === 'name');
-    const filenameByUserRaw: unknown = filenameByUserObj?.data;
-    const filenameByUser = filenameByUserRaw as string;
+    const filenameByUser: string | undefined = filenameByUserObj?.data.toString('utf-8');
 
     if (!file) throw createError({ statusCode: 400 });
 
