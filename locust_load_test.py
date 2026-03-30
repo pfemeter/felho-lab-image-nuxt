@@ -131,20 +131,3 @@ class NuxtApiUser(HttpUser):
                                 f"Expected Auth error (401/403), got {del_resp.status_code}"
                             )
 
-    @task(1)
-    def relogin(self):
-        """Low frequency: Logout and log back in."""
-        self.client.delete("/api/_auth/session", name="/api/_auth/session (logout)")
-
-        payload = {
-            "action": "login",
-            "username": self.username,
-            "password": self.password,
-        }
-        with self.client.post(
-            "/api/auth", json=payload, name="/api/auth (login)", catch_response=True
-        ) as resp:
-            if resp.status_code == 200:
-                resp.success()
-            else:
-                resp.failure(f"Relogin failed: {resp.status_code}")
